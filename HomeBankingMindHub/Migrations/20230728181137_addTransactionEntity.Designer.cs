@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HomeBankingMindHub.Migrations
 {
     [DbContext(typeof(HomeBankingContext))]
-    [Migration("20230728145226_addTransactionEntity")]
+    [Migration("20230728181137_addTransactionEntity")]
     partial class addTransactionEntity
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -81,13 +81,16 @@ namespace HomeBankingMindHub.Migrations
                     b.Property<long>("AccountId")
                         .HasColumnType("bigint");
 
+                    b.Property<double>("Amount")
+                        .HasColumnType("float");
+
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Type")
+                    b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("description")
+                    b.Property<string>("Type")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
