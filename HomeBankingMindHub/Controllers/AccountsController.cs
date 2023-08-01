@@ -41,6 +41,8 @@ namespace HomeBankingMindHub.Controllers
                         Transactions = account.Transactions.Select(t => new TransactionDTO
                         {
                             Id = t.Id,
+                            description = t.Description,
+                            Date = t.Date,
                             Amount = t.Amount,
 
                         }).ToList(),
@@ -82,6 +84,8 @@ namespace HomeBankingMindHub.Controllers
                     Transactions = account.Transactions.Select(t => new TransactionDTO
                     {
                         Id = t.Id,
+                        description= t.Description,
+                        Date = t.Date,
                         Amount = t.Amount,
 
                     }).ToList(),

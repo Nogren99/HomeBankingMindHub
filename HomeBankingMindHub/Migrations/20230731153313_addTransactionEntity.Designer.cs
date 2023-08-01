@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HomeBankingMindHub.Migrations
 {
     [DbContext(typeof(HomeBankingContext))]
-    [Migration("20230728181137_addTransactionEntity")]
+    [Migration("20230731153313_addTransactionEntity")]
     partial class addTransactionEntity
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
