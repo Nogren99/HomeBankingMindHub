@@ -10,6 +10,7 @@ namespace HomeBankingMindHub.Models
         public string Email { get; set; }
         public string Password { get; set; }
         public ICollection<Account> Accounts { get; set; }
+        public ICollection<ClientLoan> ClientLoans { get; set; }
 
         //atajo: prop tira un snipet con nombre y sus setters y getters
     }
