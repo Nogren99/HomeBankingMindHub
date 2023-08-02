@@ -257,7 +257,81 @@ namespace HomeBankingMindHub.Models
 
 
 
+            if (!context.Cards.Any())
+            {
+                //buscamos un cliente 
+                var client1 = context.Clients.FirstOrDefault(c => c.Email == "victor@gmail.com");
+                if (client1 != null)
+                {
+                    //le agregamos 2 tarjetas de crédito una GOLD y una TITANIUM, de tipo DEBITO Y CREDITO RESPECTIVAMENTE
+                    var cards = new Card[]
+                    {
+                        new Card {
+                            ClientId= client1.Id,
+                            CardHolder = client1.FirstName + " " + client1.LastName,
+                            Type = CardType.DEBIT.ToString(),
+                            Color = CardColor.GOLD.ToString(),
+                            Number = "3325-6745-7876-4445",
+                            Cvv = 990,
+                            FromDate= DateTime.Now,
+                            ThruDate= DateTime.Now.AddYears(4),
+                        },
+                        new Card {
+                            ClientId= client1.Id,
+                            CardHolder = client1.FirstName + " " + client1.LastName,
+                            Type = CardType.CREDIT.ToString(),
+                            Color = CardColor.TITANIUM.ToString(),
+                            Number = "2234-6745-552-7888",
+                            Cvv = 750,
+                            FromDate= DateTime.Now,
+                            ThruDate= DateTime.Now.AddYears(5),
+                        },
+                    };
 
+                    foreach (Card card in cards)
+                    {
+                        context.Cards.Add(card);
+                    }
+                    context.SaveChanges();
+                }
+
+
+                //cargamos datos en otro cliente
+                var client2 = context.Clients.FirstOrDefault(c => c.Email == "juan@gmail.com");
+                if (client2 != null)
+                {
+                    //le agregamos 2 tarjetas de crédito TITANIUM, de tipo DEBITO Y CREDITO RESPECTIVAMENTE
+                    var cards = new Card[]
+                    {
+                        new Card {
+                            ClientId= client2.Id,
+                            CardHolder = client2.FirstName + " " + client2.LastName,
+                            Type = CardType.DEBIT.ToString(),
+                            Color = CardColor.TITANIUM.ToString(),
+                            Number = "8256-4856-9177-0777",
+                            Cvv = 999,
+                            FromDate= DateTime.Now,
+                            ThruDate= DateTime.Now.AddYears(5),
+                        },
+                        new Card {
+                            ClientId= client2.Id,
+                            CardHolder = client2.FirstName + " " + client2.LastName,
+                            Type = CardType.CREDIT.ToString(),
+                            Color = CardColor.TITANIUM.ToString(),
+                            Number = "4178-4836-8455-0777",
+                            Cvv = 888,
+                            FromDate= DateTime.Now,
+                            ThruDate= DateTime.Now.AddYears(6),
+                        },
+                    };
+
+                    foreach (Card card in cards)
+                    {
+                        context.Cards.Add(card);
+                    }
+                    context.SaveChanges();
+                }
+            }
 
 
 

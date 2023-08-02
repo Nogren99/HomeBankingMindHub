@@ -9,8 +9,7 @@ namespace HomeBankingMindHub.Models
 {
     public class TransactionDTO
     {
-        [JsonIgnore]
-
+        
         public long Id { get; set; }
 
         public string Type { get; set; }
