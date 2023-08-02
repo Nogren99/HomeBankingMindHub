@@ -43,6 +43,7 @@ namespace HomeBankingMindHub.Controllers
                             Id = t.Id,
                             description = t.Description,
                             Date = t.Date,
+                            Type = t.Type,
                             Amount = t.Amount,
 
                         }).ToList(),
@@ -86,6 +87,7 @@ namespace HomeBankingMindHub.Controllers
                         Id = t.Id,
                         description= t.Description,
                         Date = t.Date,
+                        Type = t.Type,
                         Amount = t.Amount,
 
                     }).ToList(),
