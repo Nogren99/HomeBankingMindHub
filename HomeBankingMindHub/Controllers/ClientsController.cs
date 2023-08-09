@@ -21,9 +21,11 @@ namespace HomeBankingMindHub.Controllers
 
     {
         private IClientRepository _clientRepository;
-        public ClientsController(IClientRepository clientRepository)
+        private IAccountRepository _accountRepository;
+        public ClientsController(IClientRepository clientRepository , IAccountRepository accountRepository)
         {
             _clientRepository = clientRepository;
+            _accountRepository = accountRepository;
         }
 
         [HttpGet]
@@ -232,8 +234,74 @@ namespace HomeBankingMindHub.Controllers
                     LastName = client.LastName,
                 };
 
+
                 _clientRepository.Save(newClient);
+
+
+                //Le creamos una nueva cuenta al usuario
+                Random random = new Random();
+                int numeroAleatorio = random.Next(10000000, 99999999); // Genera un número aleatorio de 8 dígitos
+
+
+                Account newAccount = new Account
+                {
+                    Number = "VIN-" + numeroAleatorio.ToString(),
+                    CreationDate = DateTime.Now,
+                    Balance = 0,
+                    ClientId = newClient.Id,
+                };
+
+                //client.Accounts.Add(newAccount);
+
+                _accountRepository.Save(newAccount);
+                
+
                 return Created("", newClient);
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPost("current/accounts")]
+        public IActionResult Post()
+        {
+            try
+            {
+
+                //Obtengo cliente sesion iniciada
+
+                if(User.FindFirst("Client") == null)
+                {
+                    return StatusCode(403, "Email de usuario inexistente");
+                }
+
+                String email = User.FindFirst("Client").Value;
+                Client client = _clientRepository.FindByEmail(email);
+
+                if (client.Accounts.Count == 3)
+                {
+                    return StatusCode(403, "Maximo de cuentas alcanzado");
+                }
+
+                Random random = new Random();
+                int numeroAleatorio = random.Next(10000000, 99999999); // Genera un número aleatorio de 8 dígitos
+
+
+                Account newAccount = new Account
+                {
+                    Number = "VIN-" + numeroAleatorio.ToString(),
+                    CreationDate = DateTime.Now,
+                    Balance = 0,
+                    ClientId = client.Id,
+                };
+
+                //client.Accounts.Add(newAccount);
+
+                _accountRepository.Save(newAccount);
+                return Created("", newAccount);
 
             }
             catch (Exception ex)
