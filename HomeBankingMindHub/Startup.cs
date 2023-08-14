@@ -1,3 +1,4 @@
+using HomeBankingMindHub.Controllers;
 using HomeBankingMindHub.Models;
 using HomeBankingMindHub.Repositories;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -41,6 +42,10 @@ namespace HomeBankingMindHub
             services.AddControllers().AddJsonOptions(x =>x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve);
             services.AddScoped<IClientRepository, ClientRepository>();
             services.AddScoped<IAccountRepository, AccountRepository>();
+            //agrego al scoped para que cuando alguien lo necesite, lo tome
+            services.AddScoped<AccountsController>();//lo agregamos como inyeccion de dependencias 
+            services.AddScoped<ICardRepository, CardRepository>();
+            services.AddScoped<CardsController>();
 
             //autenticación - parte 6
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

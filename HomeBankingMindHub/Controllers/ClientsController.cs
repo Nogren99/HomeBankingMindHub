@@ -20,10 +20,16 @@ namespace HomeBankingMindHub.Controllers
     public class ClientsController : ControllerBase
 
     {
+        //Single responsability - un controlador no se comunica con mas de un repositorio
         private IClientRepository _clientRepository;
-        public ClientsController(IClientRepository clientRepository)
+        private AccountsController _accountsController;
+        private CardsController _cardsController;
+        public ClientsController(IClientRepository clientRepository ,AccountsController accountsController, CardsController cardsController )
         {
             _clientRepository = clientRepository;
+            _accountsController = accountsController;//luego de declarar esto agregar el controller al startup
+            _cardsController = cardsController;
+            
         }
 
         [HttpGet]
@@ -146,6 +152,7 @@ namespace HomeBankingMindHub.Controllers
         {
             try
             {
+                //User autenticado mediante cookie
                 string email = User.FindFirst("Client") != null ? User.FindFirst("Client").Value : string.Empty;
                 if (email == string.Empty)
                 {
@@ -232,7 +239,9 @@ namespace HomeBankingMindHub.Controllers
                     LastName = client.LastName,
                 };
 
+
                 _clientRepository.Save(newClient);
+                _accountsController.Post(newClient.Id);
                 return Created("", newClient);
 
             }
@@ -242,6 +251,181 @@ namespace HomeBankingMindHub.Controllers
             }
         }
 
+
+
+        [HttpGet("current/accounts")]
+        public IActionResult GetAccounts()
+        {
+            try
+            {
+                //Obtengo cliente sesion iniciada
+
+                string email = User.FindFirst("Client") != null ? User.FindFirst("Client").Value : string.Empty;
+                if (email == string.Empty)
+                {
+                    return Forbid();
+                }
+
+                Client client = _clientRepository.FindByEmail(email);
+
+                if (client == null)
+                {
+                    return Forbid();
+                }
+
+                //Lista para guardar las tarjetas a mostrar     
+                var accounts = _accountsController.GetByClient(client.Id);
+                return Ok(accounts);
+            }
+            catch
+            (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPost("current/accounts")]
+        public IActionResult Post()
+        {
+            try
+            {
+
+                //Obtengo cliente sesion iniciada
+
+                string email = User.FindFirst("Client") != null ? User.FindFirst("Client").Value : string.Empty;
+                if (email == string.Empty)
+                {
+                    return Forbid();
+                }
+
+                Client client = _clientRepository.FindByEmail(email);
+
+                if (client == null)
+                {
+                    return Forbid();
+                }
+
+                if (client.Accounts.Count >2)
+                {
+                    return StatusCode(403, "Maximo de cuentas alcanzado");
+                }
+
+                var newAccount = _accountsController.Post(client.Id);
+                /*
+                if (newAccount != null) 
+                {
+                    return StatusCode(500, "Error al crear la cuenta");
+                }*/
+
+                return Created("", newAccount);
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+
+
+        [HttpGet("current/cards")]
+        public IActionResult GetCards()
+        {
+            try
+            {
+                //Obtengo cliente sesion iniciada
+
+                string email = User.FindFirst("Client") != null ? User.FindFirst("Client").Value : string.Empty;
+                if (email == string.Empty)
+                {
+                    return Forbid();
+                }
+
+                Client client = _clientRepository.FindByEmail(email);
+
+                if (client == null)
+                {
+                    return Forbid();
+                }
+
+                //Lista para guardar las tarjetas a mostrar     
+                var cardsDTO = new List<CardDTO>();
+
+                foreach (Card cards in client.Cards)
+                {
+                    var newCardDTO = new CardDTO
+                    {
+                        
+                        Id = cards.Id,
+                        CardHolder = cards.CardHolder,
+                        Color = cards.Color,
+                        Cvv = cards.Cvv,
+                        FromDate = cards.FromDate,
+                        Number = cards.Number,
+                        ThruDate = cards.ThruDate,
+                        Type = cards.Type
+
+                    };
+                    cardsDTO.Add(newCardDTO);
+                    
+                }
+                return Ok(cardsDTO);
+            }
+            catch
+            (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+
+        [HttpPost("current/cards")]
+        public IActionResult PostCard([FromBody] Card card)
+        {
+            try
+            {
+                //Obtengo cliente sesion iniciada
+
+                string email = User.FindFirst("Client") != null ? User.FindFirst("Client").Value : string.Empty;
+                if (email == string.Empty)
+                {
+                    return Forbid();
+                }
+
+                Client client = _clientRepository.FindByEmail(email);
+
+                if (client == null)
+                {
+                    return Forbid();
+                }
+
+                //clientCard
+
+                var count= 0;
+                foreach ( Card clientCard in client.Cards) {               
+                    if (card.Type == clientCard.Type) {  
+                        count++;
+                    }
+                }
+
+                if (count >2)
+                {
+                    return StatusCode(403, "Maximo de tarjetas del mismo tipo");
+                }
+                var newCard = _cardsController.Post(client.FirstName + " " + client.LastName ,client.Id, card.Type , card.Color);
+
+                return Created("", newCard);
+
+            }
+            catch
+            (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
     }
+
+    //hacer dos get mas, uno que devuelva las carda y otro que llame al getbyclient de acccounts y los devuelva
 
 }
