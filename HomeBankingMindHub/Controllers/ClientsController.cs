@@ -20,12 +20,16 @@ namespace HomeBankingMindHub.Controllers
     public class ClientsController : ControllerBase
 
     {
+        //Single responsability - un controlador no se comunica con mas de un repositorio
         private IClientRepository _clientRepository;
-        private IAccountRepository _accountRepository;
-        public ClientsController(IClientRepository clientRepository , IAccountRepository accountRepository)
+        private AccountsController _accountsController;
+        private CardsController _cardsController;
+        public ClientsController(IClientRepository clientRepository ,AccountsController accountsController, CardsController cardsController )
         {
             _clientRepository = clientRepository;
-            _accountRepository = accountRepository;
+            _accountsController = accountsController;//luego de declarar esto agregar el controller al startup
+            _cardsController = cardsController;
+            
         }
 
         [HttpGet]
@@ -148,6 +152,7 @@ namespace HomeBankingMindHub.Controllers
         {
             try
             {
+                //User autenticado mediante cookie
                 string email = User.FindFirst("Client") != null ? User.FindFirst("Client").Value : string.Empty;
                 if (email == string.Empty)
                 {
@@ -236,30 +241,44 @@ namespace HomeBankingMindHub.Controllers
 
 
                 _clientRepository.Save(newClient);
-
-
-                //Le creamos una nueva cuenta al usuario
-                Random random = new Random();
-                int numeroAleatorio = random.Next(10000000, 99999999); // Genera un número aleatorio de 8 dígitos
-
-
-                Account newAccount = new Account
-                {
-                    Number = "VIN-" + numeroAleatorio.ToString(),
-                    CreationDate = DateTime.Now,
-                    Balance = 0,
-                    ClientId = newClient.Id,
-                };
-
-                //client.Accounts.Add(newAccount);
-
-                _accountRepository.Save(newAccount);
-                
-
+                _accountsController.Post(newClient.Id);
                 return Created("", newClient);
 
             }
             catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+
+
+        [HttpGet("current/accounts")]
+        public IActionResult GetAccounts()
+        {
+            try
+            {
+                //Obtengo cliente sesion iniciada
+
+                string email = User.FindFirst("Client") != null ? User.FindFirst("Client").Value : string.Empty;
+                if (email == string.Empty)
+                {
+                    return Forbid();
+                }
+
+                Client client = _clientRepository.FindByEmail(email);
+
+                if (client == null)
+                {
+                    return Forbid();
+                }
+
+                //Lista para guardar las tarjetas a mostrar     
+                var accounts = _accountsController.GetByClient(client.Id);
+                return Ok(accounts);
+            }
+            catch
+            (Exception ex)
             {
                 return StatusCode(500, ex.Message);
             }
@@ -273,34 +292,31 @@ namespace HomeBankingMindHub.Controllers
 
                 //Obtengo cliente sesion iniciada
 
-                if(User.FindFirst("Client") == null)
+                string email = User.FindFirst("Client") != null ? User.FindFirst("Client").Value : string.Empty;
+                if (email == string.Empty)
                 {
-                    return StatusCode(403, "Email de usuario inexistente");
+                    return Forbid();
                 }
 
-                String email = User.FindFirst("Client").Value;
                 Client client = _clientRepository.FindByEmail(email);
 
-                if (client.Accounts.Count == 3)
+                if (client == null)
+                {
+                    return Forbid();
+                }
+
+                if (client.Accounts.Count >2)
                 {
                     return StatusCode(403, "Maximo de cuentas alcanzado");
                 }
 
-                Random random = new Random();
-                int numeroAleatorio = random.Next(10000000, 99999999); // Genera un número aleatorio de 8 dígitos
-
-
-                Account newAccount = new Account
+                var newAccount = _accountsController.Post(client.Id);
+                /*
+                if (newAccount != null) 
                 {
-                    Number = "VIN-" + numeroAleatorio.ToString(),
-                    CreationDate = DateTime.Now,
-                    Balance = 0,
-                    ClientId = client.Id,
-                };
+                    return StatusCode(500, "Error al crear la cuenta");
+                }*/
 
-                //client.Accounts.Add(newAccount);
-
-                _accountRepository.Save(newAccount);
                 return Created("", newAccount);
 
             }
@@ -310,6 +326,106 @@ namespace HomeBankingMindHub.Controllers
             }
         }
 
+
+
+        [HttpGet("current/cards")]
+        public IActionResult GetCards()
+        {
+            try
+            {
+                //Obtengo cliente sesion iniciada
+
+                string email = User.FindFirst("Client") != null ? User.FindFirst("Client").Value : string.Empty;
+                if (email == string.Empty)
+                {
+                    return Forbid();
+                }
+
+                Client client = _clientRepository.FindByEmail(email);
+
+                if (client == null)
+                {
+                    return Forbid();
+                }
+
+                //Lista para guardar las tarjetas a mostrar     
+                var cardsDTO = new List<CardDTO>();
+
+                foreach (Card cards in client.Cards)
+                {
+                    var newCardDTO = new CardDTO
+                    {
+                        
+                        Id = cards.Id,
+                        CardHolder = cards.CardHolder,
+                        Color = cards.Color,
+                        Cvv = cards.Cvv,
+                        FromDate = cards.FromDate,
+                        Number = cards.Number,
+                        ThruDate = cards.ThruDate,
+                        Type = cards.Type
+
+                    };
+                    cardsDTO.Add(newCardDTO);
+                    
+                }
+                return Ok(cardsDTO);
+            }
+            catch
+            (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+
+        [HttpPost("current/cards")]
+        public IActionResult PostCard([FromBody] Card card)
+        {
+            try
+            {
+                //Obtengo cliente sesion iniciada
+
+                string email = User.FindFirst("Client") != null ? User.FindFirst("Client").Value : string.Empty;
+                if (email == string.Empty)
+                {
+                    return Forbid();
+                }
+
+                Client client = _clientRepository.FindByEmail(email);
+
+                if (client == null)
+                {
+                    return Forbid();
+                }
+
+                //clientCard
+
+                var count= 0;
+                foreach ( Card clientCard in client.Cards) {               
+                    if (card.Type == clientCard.Type) {  
+                        count++;
+                    }
+                }
+
+                if (count >2)
+                {
+                    return StatusCode(403, "Maximo de tarjetas del mismo tipo");
+                }
+                var newCard = _cardsController.Post(client.FirstName + " " + client.LastName ,client.Id, card.Type , card.Color);
+
+                return Created("", newCard);
+
+            }
+            catch
+            (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
     }
+
+    //hacer dos get mas, uno que devuelva las carda y otro que llame al getbyclient de acccounts y los devuelva
 
 }
