@@ -24,12 +24,13 @@ namespace HomeBankingMindHub.Controllers
         private IClientRepository _clientRepository;
         private AccountsController _accountsController;
         private CardsController _cardsController;
-        public ClientsController(IClientRepository clientRepository ,AccountsController accountsController, CardsController cardsController )
+        private TransactionsController _transactionsController;
+        public ClientsController(IClientRepository clientRepository, AccountsController accountsController, CardsController cardsController, TransactionsController transactionsController)
         {
             _clientRepository = clientRepository;
             _accountsController = accountsController;//luego de declarar esto agregar el controller al startup
             _cardsController = cardsController;
-            
+            _transactionsController = transactionsController;
         }
 
         [HttpGet]
@@ -63,17 +64,17 @@ namespace HomeBankingMindHub.Controllers
                             Amount = cl.Amount,
                             Payments = int.Parse(cl.Payments)
                         }).ToList(),
-                         Cards = client.Cards.Select(c => new CardDTO
-                         {
-                             Id = c.Id,
-                             CardHolder = c.CardHolder,
-                             Color = c.Color,
-                             Cvv = c.Cvv,
-                             FromDate = c.FromDate,
-                             Number = c.Number,
-                             ThruDate = c.ThruDate,
-                             Type = c.Type
-                         }).ToList()
+                        Cards = client.Cards.Select(c => new CardDTO
+                        {
+                            Id = c.Id,
+                            CardHolder = c.CardHolder,
+                            Color = c.Color,
+                            Cvv = c.Cvv,
+                            FromDate = c.FromDate,
+                            Number = c.Number,
+                            ThruDate = c.ThruDate,
+                            Type = c.Type
+                        }).ToList()
 
                     };
                     clientsDTO.Add(newClientDTO);
@@ -274,8 +275,27 @@ namespace HomeBankingMindHub.Controllers
                 }
 
                 //Lista para guardar las tarjetas a mostrar     
-                var accounts = _accountsController.GetByClient(client.Id);
-                return Ok(accounts);
+                var accountsDTO = new List<AccountDTO>();
+
+                foreach (Account account in client.Accounts)
+                {
+                    var newAccountDTO = new AccountDTO
+                    {
+
+                        Id = account.Id,
+                        Balance = account.Balance,
+                        CreationDate = account.CreationDate,
+                        Number = account.Number
+
+                    };
+                    accountsDTO.Add(newAccountDTO);
+
+                }
+                return Ok(accountsDTO);
+
+
+
+
             }
             catch
             (Exception ex)
@@ -305,7 +325,7 @@ namespace HomeBankingMindHub.Controllers
                     return Forbid();
                 }
 
-                if (client.Accounts.Count >2)
+                if (client.Accounts.Count > 2)
                 {
                     return StatusCode(403, "Maximo de cuentas alcanzado");
                 }
@@ -355,7 +375,7 @@ namespace HomeBankingMindHub.Controllers
                 {
                     var newCardDTO = new CardDTO
                     {
-                        
+
                         Id = cards.Id,
                         CardHolder = cards.CardHolder,
                         Color = cards.Color,
@@ -367,7 +387,7 @@ namespace HomeBankingMindHub.Controllers
 
                     };
                     cardsDTO.Add(newCardDTO);
-                    
+
                 }
                 return Ok(cardsDTO);
             }
@@ -401,18 +421,18 @@ namespace HomeBankingMindHub.Controllers
 
                 //clientCard
 
-                var count= 0;
-                foreach ( Card clientCard in client.Cards) {               
-                    if (card.Type == clientCard.Type) {  
+                var count = 0;
+                foreach (Card clientCard in client.Cards) {
+                    if (card.Type == clientCard.Type) {
                         count++;
                     }
                 }
 
-                if (count >2)
+                if (count > 2)
                 {
                     return StatusCode(403, "Maximo de tarjetas del mismo tipo");
                 }
-                var newCard = _cardsController.Post(client.FirstName + " " + client.LastName ,client.Id, card.Type , card.Color);
+                var newCard = _cardsController.Post(client.FirstName + " " + client.LastName, client.Id, card.Type, card.Color);
 
                 return Created("", newCard);
 
@@ -422,6 +442,84 @@ namespace HomeBankingMindHub.Controllers
             {
                 return StatusCode(500, ex.Message);
             }
+        }
+
+        [HttpGet("current/transfers")]
+        public IActionResult GetClientAccounts()
+        {
+            try
+            {
+                String email = User.FindFirst("Client") != null ? User.FindFirst("Client").Value : string.Empty;
+                if (email == string.Empty)
+                {
+                    return Forbid("Email vacío");
+                }
+
+                Client client = _clientRepository.FindByEmail(email);
+                if (client == null)
+                {
+                    return Forbid("No existe el cliente");
+                }
+
+                //cambie el nombre de los DTOS por account y clientAccounts para ver si asi los recibe bien el front
+                var clientAccounts = new List<AccountDTO>();
+
+                foreach (Account account1 in client.Accounts)
+                {
+                    var account = new AccountDTO
+                    {
+                        Number = account1.Number,
+                        Balance = account1.Balance
+                    };
+                    clientAccounts.Add(account);
+
+                }
+                return Ok(clientAccounts);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+
+            }
+
+        }
+
+        [HttpPost("current/transfers")]
+        public IActionResult Transfer([FromBody] Transaction transaction)
+        {
+            try
+            {
+                String email = User.FindFirst("Client") != null ? User.FindFirst("Client").Value : string.Empty;
+                if (email == string.Empty)
+                {
+                    return Forbid("Email vacío");
+                }
+
+                Client client = _clientRepository.FindByEmail(email);
+                if (client == null)
+                {
+                    return Forbid("No existe el cliente");
+                }
+
+                var transactionDTO = new TransferDTO
+                {
+
+                    FromAccountNumber = client.FirstName, // numero de cuenta de cliente actual
+                    ToAccountNumber = client.LastName,//numero de cuenta a transferir
+                    Amount = transaction.Amount,
+                    Description = transaction.Description,
+                };
+    
+                var newTrans = _transactionsController.Post(transactionDTO);
+
+            return Created("", newTrans);
+        }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+
+            }
+
         }
 
     }
