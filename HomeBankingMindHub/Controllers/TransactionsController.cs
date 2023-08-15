@@ -25,45 +25,7 @@ namespace HomeBankingMindHub.Controllers
             _transactionRepository = transactionRepository;
         }
 
-        [HttpGet]
-        public IActionResult Get() 
-        {
-            try
-            {
-                String email = User.FindFirst("Client") != null ? User.FindFirst("Client").Value : string.Empty;
-                if (email == string.Empty)
-                {
-                    return Forbid("Email vacío");
-                }
 
-                Client client = _clientRepository.FindByEmail(email);
-                if (client == null)
-                {
-                    return Forbid("No existe el cliente");
-                }
-
-                //cambie el nombre de los DTOS por account y clientAccounts para ver si asi los recibe bien el front
-                var clientAccounts = new List<AccountDTO>();
-
-                foreach (Account account1 in client.Accounts)
-                {
-                    var account = new AccountDTO
-                    {
-                        Number = account1.Number,
-                        Balance = account1.Balance
-                    };
-                    clientAccounts.Add(account);
-
-                }
-                return Ok(clientAccounts);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.Message);
-
-            }
-
-        }
 
         [HttpPost]
         public IActionResult Post([FromBody] TransferDTO transferDTO)

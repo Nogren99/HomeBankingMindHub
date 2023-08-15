@@ -444,6 +444,9 @@ namespace HomeBankingMindHub.Controllers
             }
         }
 
+
+
+        /*
         [HttpGet("current/transfers")]
         public IActionResult GetClientAccounts()
         {
@@ -520,10 +523,9 @@ namespace HomeBankingMindHub.Controllers
 
             }
 
-        }
+        }*/
 
     }
 
-    //hacer dos get mas, uno que devuelva las carda y otro que llame al getbyclient de acccounts y los devuelva
 
 }
