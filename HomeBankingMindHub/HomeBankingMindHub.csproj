@@ -5,12 +5,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="wwwroot\css\cards.css.bak" />
     <None Include="wwwroot\css\style.css.bak" />
     <None Include="wwwroot\js\account.js" />
     <None Include="wwwroot\js\accounts.js" />
     <None Include="wwwroot\js\cards.js" />
     <None Include="wwwroot\js\create-cards.js" />
     <None Include="wwwroot\js\index.js" />
+    <None Include="wwwroot\js\transfers.js" />
     <None Include="wwwroot\manager.js" />
   </ItemGroup>
 

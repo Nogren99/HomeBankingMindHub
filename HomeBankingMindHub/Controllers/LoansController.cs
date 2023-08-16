@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System;
+using System.Drawing;
 
 namespace HomeBankingMindHub.Controllers
 {
@@ -86,8 +87,8 @@ namespace HomeBankingMindHub.Controllers
                     return Forbid("El monto no puede ser 0");
                 }
 
-                var maxAutorizado = 99999; // ???
-                if (loanAppDto.Amount > maxAutorizado)
+                //si el valor ingresado es mayor al permitido por el loan
+                if (loanAppDto.Amount > loan.MaxAmount)
                 {
                     return Forbid("El monto super el maximo autorizado");
                 }
@@ -110,14 +111,36 @@ namespace HomeBankingMindHub.Controllers
                 }
 
 
+                account.Balance += loanAppDto.Amount;
+                _accountRepository.Save(account);
+                
 
+                var clientLoan = new ClientLoan
+                {
+                    Amount = loanAppDto.Amount*1.20,
+                    Payments = loanAppDto.Payments,
+                    ClientId = client.Id,
+                    Client = client,
+                    LoanId = loanAppDto.LoanId,
+                    Loan = loan,
+                };
 
-                return null;
+                _clientLoanRepository.Save(clientLoan);
+
+                var newClientLoanDTO = new ClientLoanDTO
+                {
+                    LoanId  = loan.Id,
+                    Name  = loan.Name,
+                    Amount = loanAppDto.Amount,
+                    Payments = int.Parse( loanAppDto.Payments),
+                };
+
+                return Ok(newClientLoanDTO);
+
             }
-            catch (System.Exception)
+            catch (Exception ex)
             {
-
-                throw;
+                return StatusCode(500, ex.Message);
             }
             
         }
