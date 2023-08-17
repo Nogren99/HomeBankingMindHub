@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System;
 using System.Drawing;
+using System.Security.Principal;
 
 namespace HomeBankingMindHub.Controllers
 {
@@ -19,13 +20,15 @@ namespace HomeBankingMindHub.Controllers
         private IAccountRepository _accountRepository;
         private LoansController _loansController;
         private IClientLoanRepository _clientLoanRepository;
-        private TransactionsController _transactionsController;
-        public LoansController(ILoanRepository loanRepository, IClientLoanRepository clientLoanRepository , IClientRepository clientRepository , IAccountRepository accountRepository )
+        private ITransactionRepository _transactionRepository;
+        public LoansController(ILoanRepository loanRepository, IClientLoanRepository clientLoanRepository , IClientRepository clientRepository , IAccountRepository accountRepository, ITransactionRepository transactionRepository 
+            )
         {
             _loanRepository = loanRepository;
             _clientLoanRepository = clientLoanRepository;
             _clientRepository = clientRepository;
             _accountRepository = accountRepository;
+            _transactionRepository = transactionRepository;
         }
 
 
@@ -112,21 +115,30 @@ namespace HomeBankingMindHub.Controllers
 
 
                 account.Balance += loanAppDto.Amount;
-                _accountRepository.Save(account);
                 
+
+                _transactionRepository.Save(new Transaction
+                {
+                    Type = TransactionType.CREDIT.ToString(),
+                    Amount = loanAppDto.Amount,
+                    Description = "Loan for $ "+ loanAppDto.Amount,
+                    AccountId = account.Id,
+                    Date = DateTime.Now,
+                });
+
+                _accountRepository.Save(account);
+
 
                 var clientLoan = new ClientLoan
                 {
                     Amount = loanAppDto.Amount*1.20,
                     Payments = loanAppDto.Payments,
                     ClientId = client.Id,
-                    Client = client,
                     LoanId = loanAppDto.LoanId,
-                    Loan = loan,
                 };
 
                 _clientLoanRepository.Save(clientLoan);
-
+                
                 var newClientLoanDTO = new ClientLoanDTO
                 {
                     LoanId  = loan.Id,

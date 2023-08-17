@@ -63,7 +63,7 @@ var app = new Vue({
             this.paymentsList = this.loanTypes.find(loanType => loanType.id == this.loanTypeId).payments.split(',');
         },
         finish: function(){
-            window.location.reload();
+            window.location.href = './accounts.html'
         },
         checkFees: function(){
             this.fees = [];
